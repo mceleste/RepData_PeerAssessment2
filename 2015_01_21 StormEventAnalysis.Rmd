@@ -17,7 +17,6 @@ The National Weather Service Storm Data was used for this analysis. The data is 
 # load libraries
 library(plyr)
 library(lubridate)
-library(lattice)
 library(ggplot2)
 library(reshape2)
 
@@ -33,6 +32,8 @@ Storm events were grouped into broader categories in order to make the data and 
 A table was then created for each storm type event listing the number of injuries and fatalities per year. A similar table was created listing the property and crop damage for each storm type event.
 
 ```{r}
+
+library(lattice)
 
 ##EVENTS THAT HAVE CAUSED HARM
 bad.events.damage <- unique(storm$EVTYPE[storm$PROPDMG>0|storm$CROPDMG>0|storm$INJURIES>0|storm$FATALITIES>0] )
@@ -158,7 +159,7 @@ NOTE: For the purposes of this analysis, I have assumed that the PROPDMGEXP and 
 
 h.table <- ddply(s, "which", summarise, total.injuries = sum(INJURIES), avg.injuries.per.year = round(sum(INJURIES)/(max(year)-min(year)),0), total.fatalities = sum(FATALITIES), avg.fatalities.per.year = round(sum(FATALITIES)/(max(year)-min(year)),0) )
 
-h.table[order(h.table$avg.fatalities.per.year, decreasing=TRUE),]
+knitr::kable( h.table[order(h.table$avg.fatalities.per.year, decreasing=TRUE),] , row.names=FALSE )
 
 p.table <- ddply(s, "which", summarise, total.prop.dmg = sum(propdmgk), avg.propdmg.per.year = round(sum(propdmgk)/(max(year)-min(year)),0), total.cropdmg = sum(cropdmgk), avg.cropdmg.per.year = round(sum(cropdmgk)/(max(year)-min(year)),0) )
 
