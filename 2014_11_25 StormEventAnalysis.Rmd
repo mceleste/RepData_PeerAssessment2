@@ -1,0 +1,248 @@
+---
+title: "Types of storm events with the most health and economic impacts in the last 30 years"
+author: "Michael Celeste"
+date: "Saturday, October 25, 2014"
+output: html_document
+---
+
+This analysis document presents data from the National Weather Service listing storm events that have had the most impact to both population health and the economy in the last 30 years. The focus of this analysis will be to select the 10 most impactful storm type events for population health and the 10 most impactful storm events that have had the most economic consequences. Population health impact will be measured in terms of injuries and fatalities. Econonmic consequences will be measure in terms of property and crop damage. Only the last 30 years from 1981 to 2011 will be assessed due to the improvement and accuracty of measurement in this time period as oppossed to earlier years.
+
+Data Processing [section]
+
+The National Weather Service Storm Data was used for this analysis. The data is located at the following location: <https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2>. The data was downloaded and read to a data structure. 
+
+```{r, echo=TRUE, cache=TRUE}
+
+# load lubridate library
+library(lubridate)
+
+# read data file
+storm <- read.csv(bzfile("repdata_data_StormData.csv.bz2","r"))
+
+```
+
+The data was then processed to first analyze what storm events were the most impactful to the health of the population. This was done by first aggregating and summing up the injuries and fatalities in separate data sets. Then merging these datasets together to create a dataset of storm event types, year, sum of injuries, and sum of fatalities. 
+
+A table was then created for each storm type event listing the number of injuries and fatalities per year
+
+```{r}
+
+library(lattice)
+
+##EVENTS THAT HAVE CAUSED HARM
+bad.events.damage <- unique(   storm$EVTYPE[storm$PROPDMG>0|storm$CROPDMG>0|storm$INJURIES>0|storm$FATALITIES>0]                                  
+                            )
+
+groups <- make.groups  (        wind = c(grep("wind", bad.events.damage, value=TRUE, ignore.case=TRUE),
+                                         grep("gust", bad.events.damage, value=TRUE, ignore.case=TRUE),
+                                         grep("turbulence", bad.events.damage, value=TRUE, ignore.case=TRUE)
+                                         ),
+                                tornado = c(grep("tornado", bad.events.damage, value=TRUE, ignore.case=TRUE),
+                                            grep("spout", bad.events.damage, value=TRUE, ignore.case=TRUE),
+                                            grep("funnel", bad.events.damage, value=TRUE, ignore.case=TRUE),
+                                            grep("torndao", bad.events.damage, value=TRUE, ignore.case=TRUE)
+                                            ),
+                                storm = c(grep("storm", bad.events.damage, value=TRUE, ignore.case=TRUE),
+                                          grep("tstmw", bad.events.damage, value=TRUE, ignore.case=TRUE)
+                                          ),
+                                fog = grep("fog", bad.events.damage, value=TRUE, ignore.case=TRUE),
+                                cold = c(grep("cold", bad.events.damage, value=TRUE, ignore.case=TRUE),
+                                         grep("hypotherm", bad.events.damage, value=TRUE, ignore.case=TRUE),
+                                         grep("low temperature", bad.events.damage, value=TRUE, ignore.case=TRUE)
+                                         ),
+                                ice = c(grep("ice", bad.events.damage, value=TRUE, ignore.case=TRUE),
+                                        grep("freez", bad.events.damage, value=TRUE, ignore.case=TRUE),
+                                        grep("glaze", bad.events.damage, value=TRUE, ignore.case=TRUE),
+                                        grep("icy", bad.events.damage, value=TRUE, ignore.case=TRUE),
+                                        grep("frost", bad.events.damage, value=TRUE, ignore.case=TRUE),                                        
+                                        grep("sleet", bad.events.damage, value=TRUE, ignore.case=TRUE)                                
+                                        ),
+                                snow = c(grep("snow", bad.events.damage, value=TRUE, ignore.case=TRUE),
+                                         grep("winter weather", bad.events.damage, value=TRUE, ignore.case=TRUE),
+                                         grep("wintry", bad.events.damage, value=TRUE, ignore.case=TRUE),
+                                         grep("blizzard", bad.events.damage, value=TRUE, ignore.case=TRUE),
+                                         grep("burst", bad.events.damage, value=TRUE, ignore.case=TRUE),
+                                         grep("heavy mix", bad.events.damage, value=TRUE, ignore.case=TRUE),
+                                         grep("mixed precip", bad.events.damage, value=TRUE, ignore.case=TRUE)
+                                        ),
+                                hail = grep("hail", bad.events.damage, value=TRUE, ignore.case=TRUE),
+                                rain = c(grep("rain", bad.events.damage, value=TRUE, ignore.case=TRUE),
+                                         grep("heavy precipitat", bad.events.damage, value=TRUE, ignore.case=TRUE),
+                                         grep(" wet", bad.events.damage, value=TRUE, ignore.case=TRUE),
+                                         grep("heavy shower", bad.events.damage, value=TRUE, ignore.case=TRUE)
+                                         ),
+                                erosion = grep("erosion", bad.events.damage, value=TRUE, ignore.case=TRUE),
+                                lightning = c(grep("lightning", bad.events.damage, value=TRUE, ignore.case=TRUE),
+                                              grep("lighting", bad.events.damage, value=TRUE, ignore.case=TRUE),
+                                              grep("ligntning", bad.events.damage, value=TRUE, ignore.case=TRUE)
+                                              ),
+                                hurricane = grep("hurricane", bad.events.damage, value=TRUE, ignore.case=TRUE),
+                                tsunami = grep("tsunami", bad.events.damage, value=TRUE, ignore.case=TRUE),
+                                flood = c(grep("flood", bad.events.damage, value=TRUE, ignore.case=TRUE),
+                                          grep("drowning", bad.events.damage, value=TRUE, ignore.case=TRUE),
+                                          grep("stream fld", bad.events.damage, value=TRUE, ignore.case=TRUE),
+                                          grep("high water", bad.events.damage, value=TRUE, ignore.case=TRUE),
+                                 grep("rapidly rising water", bad.events.damage, value=TRUE, ignore.case=TRUE),
+                                          grep("dam break", bad.events.damage, value=TRUE, ignore.case=TRUE),
+                                          grep("stream", bad.events.damage, value=TRUE, ignore.case=TRUE)
+                                          ),
+                                heat = c(grep("warm", bad.events.damage, value=TRUE, ignore.case=TRUE),
+                                         grep("heat", bad.events.damage, value=TRUE, ignore.case=TRUE),
+                                         grep("hypertherm", bad.events.damage, value=TRUE, ignore.case=TRUE)
+                                         ),
+                                avalanche = grep("avalan", bad.events.damage, value=TRUE, ignore.case=TRUE),
+                                dust = grep("dust", bad.events.damage, value=TRUE, ignore.case=TRUE),
+                                sea = c(grep("seas", bad.events.damage, value=TRUE, ignore.case=TRUE),
+                                        grep("marine", bad.events.damage, value=TRUE, ignore.case=TRUE),
+                                        grep("surf", bad.events.damage, value=TRUE, ignore.case=TRUE),
+                                        grep("rip current", bad.events.damage, value=TRUE, ignore.case=TRUE),
+                                        grep("wave", bad.events.damage, value=TRUE, ignore.case=TRUE),
+                                        grep("swells", bad.events.damage, value=TRUE, ignore.case=TRUE),
+                                        grep("coastal surge", bad.events.damage, value=TRUE, ignore.case=TRUE),
+                                        grep("seiche", bad.events.damage, value=TRUE, ignore.case=TRUE),                                        
+                                        grep("tide", bad.events.damage, value=TRUE, ignore.case=TRUE)
+                                        ),
+                                fire = grep("fire", bad.events.damage, value=TRUE, ignore.case=TRUE),
+                                drought = grep("drought", bad.events.damage, value=TRUE, ignore.case=TRUE),
+                                slides = grep("slide", bad.events.damage, value=TRUE, ignore.case=TRUE),
+                                typhoon = grep("typhoon", bad.events.damage, value=TRUE, ignore.case=TRUE),
+                                other = c(grep("Other", bad.events.damage, value=TRUE, ignore.case=TRUE), 
+                                          grep("HIGH", bad.events.damage, value=TRUE, fixed=TRUE),
+                                          grep("URBAN AND SMALL", bad.events.damage, value=TRUE, ignore.case=TRUE),
+                                          grep("URBAN SMALL", bad.events.damage, value=TRUE, ignore.case=TRUE),
+                                          grep("apache", bad.events.damage, value=TRUE, ignore.case=TRUE),
+                                          grep("volcanic", bad.events.damage, value=TRUE, ignore.case=TRUE),
+                                          grep("depression", bad.events.damage, value=TRUE, ignore.case=TRUE),
+                                          grep("smoke", bad.events.damage, value=TRUE, ignore.case=TRUE),
+                                          grep("landslump", bad.events.damage, value=TRUE, ignore.case=TRUE)
+                                )
+                        )
+
+## Modify storm dataframe
+storm$year <- year( mdy_hms(storm$BGN_DATE) )
+
+## Plot of storm events tracked per year ##TODO ADD THIS PLOT
+###plot(table(storm$year))
+
+## Create a merged dataset with the group column 
+s <- merge(s, groups, by.x="EVTYPE", by.y="data", all=FALSE)
+
+###s.injuries <- ddply(s, c("which","year"), summarise, total.injuries = round(sum(INJURIES),0))
+
+h.table <- ddply(s, "which", summarise, total.injuries = sum(INJURIES), avg.injuries.per.year = round(sum(INJURIES)/(max(year)-min(year)),0), total.fatalities = sum(FATALITIES), avg.fatalities.per.year = round(sum(FATALITIES)/(max(year)-min(year)),0) )
+
+h.table[order(h.table$avg.fatalities.per.year, decreasing=TRUE),]
+
+## TODO: Create a variable to hold various prop and crop damage by K, M, B
+##
+##
+
+p.table <- ddply(s, "which", summarise, total.prop.dmg = sum(PROPDMG), avg.propdmg.per.year = round(sum(PROPDMG)/(max(year)-min(year)),0), total.cropdmg = sum(CROPDMG), avg.cropdmg.per.year = round(sum(CROPDMG)/(max(year)-min(year)),0) )
+
+p.table[order(p.table$avg.propdmg.per.year, decreasing=TRUE),]
+
+###storm$group <- event.groups$which[storm$EVTYPE %in% event.groups$data] 
+
+### Property and Crop damage make sure to include the EXP -> K, M, or B
+```
+
+Results [section]
+
+one to three figures
+
+```{r}
+
+#### injuries <- injuries[sort(injuries$x, decreasing=TRUE, index.return=TRUE)$ix,]
+top.injuries <- head(injuries$evtype[sort(injuries$x, decreasing=TRUE, index.return=TRUE)$ix])
+reshape(ts, idvar="year", timevar="evtype", direction="wide")
+
+
+```
+
+You can also embed plots, for example:
+
+```{r, echo=FALSE}
+plot(cars)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+
+Introduction
+
+Storms and other severe weather events can cause both public health and economic problems for communities and municipalities. Many severe events can result in fatalities, injuries, and property damage, and preventing such outcomes to the extent possible is a key concern.
+
+This project involves exploring the U.S. National Oceanic and Atmospheric Administration's (NOAA) storm database. This database tracks characteristics of major storms and weather events in the United States, including when and where they occur, as well as estimates of any fatalities, injuries, and property damage.
+
+Data
+
+The data for this assignment come in the form of a comma-separated-value file compressed via the bzip2 algorithm to reduce its size. You can download the file from the course web site:
+
+Storm Data [47Mb]
+There is also some documentation of the database available. Here you will find how some of the variables are constructed/defined.
+
+National Weather Service Storm Data Documentation
+
+National Climatic Data Center Storm Events FAQ
+
+The events in the database start in the year 1950 and end in November 2011. In the earlier years of the database there are generally fewer events recorded, most likely due to a lack of good records. More recent years should be considered more complete.
+
+Assignment
+
+The basic goal of this assignment is to explore the NOAA Storm Database and answer some basic questions about severe weather events. You must use the database to answer the questions below and show the code for your entire analysis. Your analysis can consist of tables, figures, or other summaries. You may use any R package you want to support your analysis.
+
+Questions
+
+Your data analysis must address the following questions:
+
+Across the United States, which types of events (as indicated in the EVTYPE variable) are most harmful with respect to population health?
+
+Across the United States, which types of events have the greatest economic consequences?
+
+Consider writing your report as if it were to be read by a government or municipal manager who might be responsible for preparing for severe weather events and will need to prioritize resources for different types of events. However, there is no need to make any specific recommendations in your report.
+
+Requirements
+
+For this assignment you will need some specific tools
+
+RStudio: You will need RStudio to publish your completed analysis document to RPubs. You can also use RStudio to edit/write your analysis.
+
+knitr: You will need the knitr package in order to compile your R Markdown document and convert it to HTML
+
+Document Layout
+
+Language: Your document should be written in English.
+
+Title: Your document should have a title that briefly summarizes your data analysis
+
+Synopsis: Immediately after the title, there should be a synopsis which describes and summarizes your analysis in at most 10 complete sentences.
+
+There should be a section titled Data Processing which describes (in words and code) how the data were loaded into R and processed for analysis. In particular, your analysis must start from the raw CSV file containing the data. You cannot do any preprocessing outside the document. If preprocessing is time-consuming you may consider using the cache = TRUE option for certain code chunks.
+
+There should be a section titled Results in which your results are presented.
+
+You may have other sections in your analysis, but Data Processing and Results are required.
+
+The analysis document must have at least one figure containing a plot.
+
+Your analyis must have no more than three figures. Figures may have multiple plots in them (i.e. panel plots), but there cannot be more than three figures total.
+
+You must show all your code for the work in your analysis document. This may make the document a bit verbose, but that is okay. In general, you should ensure that echo = TRUE for every code chunk (this is the default setting in knitr).
+
+Publishing Your Analysis
+
+For this assignment you will need to publish your analysis on RPubs.com. If you do not already have an account, then you will have to create a new account. After you have completed writing your analysis in RStudio, you can publish it to RPubs by doing the following:
+
+In RStudio, make sure your R Markdown document (.Rmd) document is loaded in the editor
+
+Click the Knit HTML button in the doc toolbar to preview your document.
+
+In the preview window, click the Publish button.
+
+Once your document is published to RPubs, you should get a unique URL to that document. Make a note of this URL as you will need it to submit your assignment.
+
+NOTE: If you are having trouble connecting with RPubs due to proxy-related or other issues, you can upload your final analysis document file as a PDF to Coursera instead.
+
+Submitting Your Assignment
+
+In order to submit this assignment, you must copy the RPubs URL for your completed data analysis document in to the peer assessment question.
